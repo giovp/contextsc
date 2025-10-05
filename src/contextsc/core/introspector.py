@@ -37,8 +37,6 @@ class FunctionInfo:
 class IntrospectionError(Exception):
     """Raised when introspection fails."""
 
-    pass
-
 
 def get_object_by_path(module_path: str) -> Any:
     """Get a Python object by its full dotted path.

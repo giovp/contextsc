@@ -107,16 +107,25 @@ def search_scverse_functions(query: str) -> str:
 
 ## Development Commands
 
+### Python Environment
+
+This project uses a specific Python environment located at:
+```
+/Users/gpalla/Projects/venv/fastmcp/bin/python
+```
+
+Always use this Python interpreter for development tasks (stored in `.python-version`).
+
 ### Environment Setup
 ```bash
 # Install with development dependencies
-pip install -e ".[dev]"
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pip install -e ".[dev]"
 
 # Install with all optional dependencies
-pip install -e ".[dev,doc,test]"
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pip install -e ".[dev,doc,test]"
 
 # Setup pre-commit hooks
-pre-commit install
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pre_commit install
 ```
 
 ### Running the Server
@@ -134,18 +143,18 @@ MCP_TRANSPORT=http MCP_PORT=8080 contextsc
 ### Testing
 ```bash
 # Run all tests
-pytest
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pytest
 
 # Run with coverage
-coverage run -m pytest
-coverage report
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m coverage run -m pytest
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m coverage report
 
 # Run specific test file
-pytest tests/test_core.py -v
-pytest tests/test_tools.py -v
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pytest tests/test_core.py -v
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pytest tests/test_tools.py -v
 
 # Run specific test
-pytest tests/test_app.py::test_mcp_server
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pytest tests/test_app.py::test_mcp_server
 ```
 
 Test organization:
@@ -156,13 +165,13 @@ Test organization:
 ### Linting and Formatting
 ```bash
 # Run pre-commit on all files
-pre-commit run --all-files
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pre_commit run --all-files
 
 # Format code with ruff
-ruff format src tests
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m ruff format src tests
 
 # Lint with ruff
-ruff check src tests --fix
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m ruff check src tests --fix
 ```
 
 ### Documentation

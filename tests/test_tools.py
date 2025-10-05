@@ -61,9 +61,7 @@ async def test_get_scverse_docs_invalid():
 async def test_get_scverse_docs_with_token_limit():
     """Test getting docs with token limit."""
     async with Client(contextsc.mcp) as client:
-        result = await client.call_tool(
-            "get_scverse_docs", {"function_path": "os.path.join", "max_tokens": 100}
-        )
+        result = await client.call_tool("get_scverse_docs", {"function_path": "os.path.join", "max_tokens": 100})
         assert result.data is not None
         # Should either be truncated or within limit
         assert len(result.data) < 10000

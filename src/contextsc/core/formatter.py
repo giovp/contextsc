@@ -44,9 +44,9 @@ def format_function_docs(func_info: FunctionInfo, max_tokens: int | None = None)
         "",
         "## Signature",
         "",
-        f"```python",
+        "```python",
         f"{func_info.name}{func_info.signature}",
-        f"```",
+        "```",
         "",
     ]
 

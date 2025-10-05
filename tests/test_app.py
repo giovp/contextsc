@@ -13,5 +13,5 @@ def test_package_has_version():
 async def test_mcp_server():
     """Testing MCP server."""
     async with Client(contextsc.mcp) as client:
-        result = await client.call_tool("greet", {"name": "test"})
-        assert result.data == "Hello, test!"
+        result = await client.call_tool("resolve_scverse_package", {})
+        assert "Installed Scverse Packages" in result.data

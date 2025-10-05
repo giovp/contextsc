@@ -7,7 +7,7 @@
 [badge-tests]: https://img.shields.io/github/actions/workflow/status/giovp/contextsc/test.yaml?branch=main
 [badge-docs]: https://img.shields.io/readthedocs/contextsc
 
-A very interesting piece of code
+BioContextAI MCP server for scverse ecosystem documentation. Provides version-specific documentation and code examples for scanpy, anndata, mudata, squidpy, and other scverse packages.
 
 ## Getting started
 
@@ -18,7 +18,7 @@ You can also find the project on [BioContextAI](https://biocontext.ai), the comm
 
 ## Installation
 
-You need to have Python 3.10 or newer installed on your system.
+You need to have Python 3.11 or newer installed on your system.
 If you don't have Python installed, we recommend installing [uv][].
 
 There are several alternative options to install contextsc:
@@ -45,16 +45,22 @@ uvx contextsc
 }
 ```
 
-3. Install it through `pip`:
+3. Install it with `uv`:
 
 ```bash
-pip install --user contextsc
+uv pip install contextsc
 ```
 
-4. Install the latest development version:
+4. Install it through `pip`:
 
 ```bash
-pip install git+https://github.com/giovp/contextsc.git@main
+pip install contextsc
+```
+
+5. Install the latest development version:
+
+```bash
+uv pip install git+https://github.com/giovp/contextsc.git@main
 ```
 
 ## Contact

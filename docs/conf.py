@@ -57,7 +57,7 @@ extensions = [
     "sphinxext.opengraph",
     "autoapi.extension",
 ]
-autoapi_dirs = ['../src/contextsc']
+autoapi_dirs = ["../src/contextsc"]
 autosummary_generate = True
 autodoc_member_order = "groupwise"
 default_role = "literal"

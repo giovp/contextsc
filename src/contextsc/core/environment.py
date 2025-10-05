@@ -3,6 +3,7 @@
 import importlib.metadata
 import importlib.util
 from dataclasses import dataclass
+from functools import lru_cache
 
 from .package_registry import CORE_SCVERSE_PACKAGES, ScversePackage
 
@@ -26,6 +27,7 @@ class InstalledPackage:
     is_available: bool
 
 
+@lru_cache(maxsize=128)
 def is_package_installed(package_name: str) -> bool:
     """Check if a package is installed and importable.
 
@@ -42,6 +44,7 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
+@lru_cache(maxsize=128)
 def get_package_version(package_name: str) -> str | None:
     """Get the version of an installed package.
 

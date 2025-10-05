@@ -23,10 +23,11 @@ def get_scverse_docs(function_path: str, max_tokens: int = 10000) -> str:
     ----------
     function_path : str
         Full dotted path to a function or module.
-        Examples:
+
+    Examples
+    --------
         - 'scanpy.pp.normalize_total' - Get docs for specific function
         - 'scanpy.pp' - List all functions in the module
-        - 'anndata.AnnData' - Get docs for a class
     max_tokens : int, default: 10000
         Maximum tokens to return in the response. Documentation will be
         truncated if it exceeds this limit.
@@ -41,17 +42,13 @@ def get_scverse_docs(function_path: str, max_tokens: int = 10000) -> str:
     --------
     >>> get_scverse_docs("scanpy.pp.normalize_total")
     >>> get_scverse_docs("scanpy.pp")  # List all preprocessing functions
-    >>> get_scverse_docs("anndata.AnnData.obs_names")
     """
     # Check if any scverse packages are installed
     installed = get_installed_package_names()
     if not installed:
         return (
             "❌ No scverse packages are currently installed.\n\n"
-            "Please install at least one scverse package:\n"
-            "- `pip install scanpy` for single-cell analysis\n"
-            "- `pip install anndata` for data structures\n"
-            "- `pip install mudata` for multimodal data\n\n"
+            "Please install at least one scverse package, e.g., `pip install scanpy`\n\n"
             "Use `resolve-scverse-package` to see all available packages."
         )
 
@@ -89,9 +86,6 @@ def get_scverse_docs(function_path: str, max_tokens: int = 10000) -> str:
             return (
                 f"❌ Could not find '{function_path}'.\n\n"
                 f"Error: {str(e)}\n\n"
-                f"Make sure the path is correct. Examples:\n"
-                f"- 'scanpy.pp.normalize_total'\n"
-                f"- 'anndata.AnnData'\n"
-                f"- 'mudata.MuData'\n\n"
+                f"Make sure the path is correct. Example: 'scanpy.pp.normalize_total'\n\n"
                 f"Use `resolve-scverse-package` to see installed packages."
             )

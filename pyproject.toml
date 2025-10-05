@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 [project]
 name = "contextsc"
 version = "0.0.1"
-description = "A very interesting piece of code"
+description = "BioContextAI MCP server for scverse ecosystem documentation"
 readme = "README.md"
 license = { file = "LICENSE" }
 maintainers = [
@@ -40,12 +40,12 @@ optional-dependencies.doc = [
   # Until pybtex >0.24.0 releases: https://bitbucket.org/pybtex-devs/pybtex/issues/169/
   "setuptools",
   "sphinx>=8.1",
+  "sphinx-autoapi",
   "sphinx-book-theme>=1",
   "sphinx-copybutton",
   "sphinx-tabs",
   # "sphinxcontrib-bibtex>=1",
   "sphinxext-opengraph",
-  "sphinx-autoapi",
 ]
 optional-dependencies.test = [
   "coverage",
@@ -61,7 +61,6 @@ scripts.contextsc = "contextsc.main:run_app"
 
 [tool.hatch.build.targets.wheel]
 packages = [ "src/contextsc" ]
-
 
 [tool.hatch.envs.default]
 installer = "uv"
