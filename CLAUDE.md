@@ -37,10 +37,10 @@ This MCP server is built with FastMCP and exposes tools that MCP clients can cal
   - `_get_docs.py`: Fetches documentation for specific functions/classes
   - Tools are registered by decorating functions with `@mcp.tool`
 - **`src/contextsc/core/`**: Core introspection functionality
-  - `package_registry.py`: Registry of 6 core scverse packages (anndata, scanpy, mudata, squidpy, muon, spatialdata)
+  - `package_registry.py`: Registry of 12 core scverse packages (3 data formats, 9 analysis tools)
   - `environment.py`: Detects which packages are installed using `importlib.util.find_spec()`
-  - `introspector.py`: Extracts docstrings, signatures, and parameters using `inspect` module
-  - `formatter.py`: Formats documentation for LLM consumption with token limits
+  - `introspector.py`: Extracts docstrings, signatures, parameters using `inspect` module; includes topic-based search
+  - `formatter.py`: Formats documentation with intelligent section-based truncation and topic filtering
 
 ### MCP Tools
 
@@ -51,9 +51,14 @@ This MCP server is built with FastMCP and exposes tools that MCP clients can cal
 **`get-scverse-docs`**: Fetches documentation from installed packages
 - Parameters:
   - `function_path` - dotted path (e.g., `scanpy.pp.normalize_total`, `anndata.AnnData`)
-  - `max_tokens` (default: 10000) - token limit for response
+  - `topic` (optional) - keyword for filtering documentation (e.g., 'normalize', 'clustering')
+  - `max_tokens` (default: 10000, minimum: 1000) - token limit for response
 - Returns: Formatted documentation with signature, parameters, docstring
 - Also supports listing functions in a module (e.g., `scanpy.pp` lists all preprocessing functions)
+- **Topic filtering modes**:
+  - With module path: Searches for functions matching the topic (e.g., `get-scverse-docs("scanpy.pp", topic="normalize")`)
+  - With function path: Filters docstring sections by topic (e.g., `get-scverse-docs("scanpy.pp.neighbors", topic="connectivity")`)
+- **Intelligent truncation**: Preserves critical sections (signature, parameters) even with low token limits
 
 ### How It Works
 
@@ -61,15 +66,61 @@ This MCP server is built with FastMCP and exposes tools that MCP clients can cal
 2. **Dynamic Import**: Only imports packages that are actually available in the environment
 3. **Introspection**: Uses `inspect.getdoc()` and `inspect.signature()` to extract documentation
 4. **Formatting**: Presents information in markdown format optimized for LLM consumption
-5. **Token Management**: Truncates long documentation to stay within token limits
+5. **Token Management**: Intelligent section-based truncation with priority levels
+   - **CRITICAL sections** (always included): Function header, signature, parameters
+   - **HIGH priority**: Return type, topic-filtered docstring
+   - **MEDIUM priority**: Full docstring, additional sections
+   - Enforces minimum 1000 tokens, default 10000 tokens
+6. **Topic Filtering**:
+   - **Automatic semantic search**: If `contextsc[semsearch]` is installed, automatically uses sentence transformers for intelligent matching
+   - **Keyword search fallback**: Falls back to keyword matching if semantic search unavailable
+   - **Section-level**: Parses numpy-style docstrings and filters sections by keyword relevance
 
-Example usage flow:
+Example usage flows:
 ```python
-# User asks: "How do I normalize scanpy data?"
-# Tool call: resolve_scverse_package() -> Shows scanpy is installed v1.9.0
+# Basic usage: Get full documentation
 # Tool call: get_scverse_docs("scanpy.pp.normalize_total")
 # Returns: Full docstring with signature and parameters
+
+# Topic search: Find relevant functions in a module
+# Tool call: get_scverse_docs("scanpy.pp", topic="normalize")
+# Returns: Top 5 functions matching "normalize" with their documentation
+# Note: Uses semantic search automatically if contextsc[semsearch] is installed
+
+# Filtered documentation: Focus on specific aspects
+# Tool call: get_scverse_docs("scanpy.pp.neighbors", topic="connectivity")
+# Returns: Function docs with only sections mentioning "connectivity"
+
+# Token-limited: Ensure response fits context
+# Tool call: get_scverse_docs("scanpy.pp.normalize_total", max_tokens=2000)
+# Returns: Intelligently truncated docs preserving critical info
 ```
+
+### Semantic Search (Optional Enhancement)
+
+Semantic search is **automatically enabled** when installed, providing intelligent function matching:
+
+**Installation**:
+```bash
+pip install contextsc[semsearch]
+```
+
+**What it provides**:
+- **Automatic activation**: No configuration needed - just install and it works
+- **Conceptual matching**: Finds functions by meaning (e.g., "standardize" matches "normalize", "scale")
+- **Synonym awareness**: More flexible than keyword search for related concepts
+- **Lightweight**: Uses sentence-transformers model (`all-MiniLM-L6-v2`, ~80MB)
+
+**How it works**:
+1. If `contextsc[semsearch]` is installed → automatically uses semantic search
+2. If not installed → automatically uses keyword search
+3. No user configuration or parameters needed - completely transparent
+
+**When to install**:
+- ✅ When searching with natural language queries
+- ✅ When looking for functions you don't know the exact name of
+- ✅ When exploring unfamiliar modules
+- ❌ Skip if you only search by exact function names (keyword search is faster)
 
 ### Adding New Tools
 
@@ -124,6 +175,9 @@ Always use this Python interpreter for development tasks (stored in `.python-ver
 # Install with all optional dependencies
 /Users/gpalla/Projects/venv/fastmcp/bin/python -m pip install -e ".[dev,doc,test]"
 
+# Install with semantic search support (optional)
+/Users/gpalla/Projects/venv/fastmcp/bin/python -m pip install -e ".[semsearch]"
+
 # Setup pre-commit hooks
 /Users/gpalla/Projects/venv/fastmcp/bin/python -m pre_commit install
 ```
@@ -159,7 +213,13 @@ MCP_TRANSPORT=http MCP_PORT=8080 contextsc
 
 Test organization:
 - `tests/test_app.py` - Basic MCP server tests
-- `tests/test_core.py` - Core introspection functionality tests (15 tests)
+- `tests/test_core.py` - Core introspection functionality tests (32 tests)
+  - Package registry and environment detection
+  - Function introspection and documentation extraction
+  - Token limit enforcement and intelligent truncation
+  - Topic filtering (keyword and semantic search)
+  - Semantic search fallback and error handling
+  - Numpy docstring parsing
 - `tests/test_tools.py` - MCP tool integration tests (6 tests)
 
 ### Linting and Formatting

@@ -47,6 +47,9 @@ optional-dependencies.doc = [
   # "sphinxcontrib-bibtex>=1",
   "sphinxext-opengraph",
 ]
+optional-dependencies.semsearch = [
+  "sentence-transformers>=2",
+]
 optional-dependencies.test = [
   "coverage",
   "pytest",

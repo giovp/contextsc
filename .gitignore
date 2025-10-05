@@ -21,3 +21,4 @@ __pycache__/
 /docs/_build/
 .claude/
 .python-version
+CLAUDE.md
