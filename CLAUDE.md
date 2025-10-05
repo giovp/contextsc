@@ -1,0 +1,196 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**contextsc** is a BioContextAI MCP (Model Context Protocol) server inspired by Context7, designed specifically for the scverse ecosystem. It is part of the [BioContextAI Registry](https://biocontext.ai/registry), a community-driven catalog of biomedical MCP servers that bridge the gap between LLMs and specialized biomedical knowledge.
+
+This server provides up-to-date, version-specific documentation and code examples for scverse packages (scanpy, anndata, mudata, squidpy, scvi-tools, etc.) directly into LLM prompts.
+
+### Purpose
+
+Solves the problem of LLMs generating outdated or hallucinated code for scverse packages by:
+- **Environment-aware introspection**: Only provides documentation for packages installed in the user's environment
+- **Python introspection**: Uses `inspect` and `importlib` to extract docstrings directly from installed packages (no web scraping)
+- **Version-specific**: Reports actual installed versions using `importlib.metadata`
+- **Real API references**: Extracts signatures, parameters, and return types directly from source
+- Contributing to the broader BioContextAI ecosystem of composable, interoperable biomedical AI tools
+
+### Scverse Ecosystem
+
+The scverse project is a computational ecosystem for single-cell omics data analysis, including:
+- **Core data structures**: anndata, mudata, spatialdata
+- **Analysis frameworks**: scanpy, muon, squidpy, scvi-tools, scirpy, pertpy
+- **Specialized tools**: rapids-singlecell (GPU-accelerated), SnapATAC2 (ATAC-seq), decoupler (scoring framework)
+
+This MCP server is built with FastMCP and exposes tools that MCP clients can call to retrieve documentation and examples.
+
+## Architecture
+
+### Core Components
+
+- **`src/contextsc/mcp.py`**: Defines the FastMCP instance (`mcp`) that serves as the core server object
+- **`src/contextsc/main.py`**: Entry point with Click CLI for running the server with different transports (stdio/http) and environments (development/production)
+- **`src/contextsc/tools/`**: MCP tool implementations
+  - `_resolve_package.py`: Lists installed scverse packages and their versions
+  - `_get_docs.py`: Fetches documentation for specific functions/classes
+  - Tools are registered by decorating functions with `@mcp.tool`
+- **`src/contextsc/core/`**: Core introspection functionality
+  - `package_registry.py`: Registry of 6 core scverse packages (anndata, scanpy, mudata, squidpy, muon, spatialdata)
+  - `environment.py`: Detects which packages are installed using `importlib.util.find_spec()`
+  - `introspector.py`: Extracts docstrings, signatures, and parameters using `inspect` module
+  - `formatter.py`: Formats documentation for LLM consumption with token limits
+
+### MCP Tools
+
+**`resolve-scverse-package`**: Resolves package names and lists installed packages
+- Parameters: `package_name` (optional) - specific package to look up
+- Returns: List of all packages with installation status, or details for a specific package
+
+**`get-scverse-docs`**: Fetches documentation from installed packages
+- Parameters:
+  - `function_path` - dotted path (e.g., `scanpy.pp.normalize_total`, `anndata.AnnData`)
+  - `max_tokens` (default: 10000) - token limit for response
+- Returns: Formatted documentation with signature, parameters, docstring
+- Also supports listing functions in a module (e.g., `scanpy.pp` lists all preprocessing functions)
+
+### How It Works
+
+1. **Package Detection**: On startup or when called, checks which core scverse packages are installed
+2. **Dynamic Import**: Only imports packages that are actually available in the environment
+3. **Introspection**: Uses `inspect.getdoc()` and `inspect.signature()` to extract documentation
+4. **Formatting**: Presents information in markdown format optimized for LLM consumption
+5. **Token Management**: Truncates long documentation to stay within token limits
+
+Example usage flow:
+```python
+# User asks: "How do I normalize scanpy data?"
+# Tool call: resolve_scverse_package() -> Shows scanpy is installed v1.9.0
+# Tool call: get_scverse_docs("scanpy.pp.normalize_total")
+# Returns: Full docstring with signature and parameters
+```
+
+### Adding New Tools
+
+To add a new tool:
+
+1. Create a new file in `src/contextsc/tools/` (e.g., `_new_tool.py`)
+2. Import `mcp` from `contextsc.mcp`
+3. Use helper functions from `contextsc.core` for introspection
+4. Decorate your function with `@mcp.tool`
+5. Use numpy-style docstrings (required for tool documentation)
+6. Export the function in `src/contextsc/tools/__init__.py`
+
+Example:
+```python
+from contextsc.core import extract_function_info, format_function_docs
+from contextsc.mcp import mcp
+
+@mcp.tool
+def search_scverse_functions(query: str) -> str:
+    """Search for functions matching a query across all installed packages.
+
+    Parameters
+    ----------
+    query : str
+        Search term (e.g., 'normalize', 'cluster').
+
+    Returns
+    -------
+    str
+        List of matching functions with brief descriptions.
+    """
+    # Implementation using core utilities
+    ...
+```
+
+## Development Commands
+
+### Environment Setup
+```bash
+# Install with development dependencies
+pip install -e ".[dev]"
+
+# Install with all optional dependencies
+pip install -e ".[dev,doc,test]"
+
+# Setup pre-commit hooks
+pre-commit install
+```
+
+### Running the Server
+```bash
+# Run with stdio transport (default)
+contextsc
+
+# Run with HTTP transport on custom port
+contextsc --transport http --port 8080 --host 0.0.0.0
+
+# Using environment variables
+MCP_TRANSPORT=http MCP_PORT=8080 contextsc
+```
+
+### Testing
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+coverage run -m pytest
+coverage report
+
+# Run specific test file
+pytest tests/test_core.py -v
+pytest tests/test_tools.py -v
+
+# Run specific test
+pytest tests/test_app.py::test_mcp_server
+```
+
+Test organization:
+- `tests/test_app.py` - Basic MCP server tests
+- `tests/test_core.py` - Core introspection functionality tests (15 tests)
+- `tests/test_tools.py` - MCP tool integration tests (6 tests)
+
+### Linting and Formatting
+```bash
+# Run pre-commit on all files
+pre-commit run --all-files
+
+# Format code with ruff
+ruff format src tests
+
+# Lint with ruff
+ruff check src tests --fix
+```
+
+### Documentation
+```bash
+# Build documentation
+hatch run docs:build
+
+# Open documentation in browser
+hatch run docs:open
+
+# Clean documentation build
+hatch run docs:clean
+```
+
+## Code Standards
+
+- **Python version**: Requires Python 3.11+
+- **Line length**: 120 characters
+- **Docstring style**: NumPy convention (enforced by ruff)
+- **Type hints**: Required for all function signatures
+- **Import sorting**: Handled by ruff (isort)
+- **Linting**: Ruff with extensive rule set (see pyproject.toml)
+  - Test files exempt from docstring requirements
+  - `__init__.py` files allow unused imports (F401)
+
+## Project Configuration
+
+- Built with **hatchling** as the build backend
+- Uses **uv** as the installer (via hatch)
+- Test matrix covers Python 3.11, 3.12, and 3.13
+- Pre-commit hooks run on both pre-commit and pre-push stages
