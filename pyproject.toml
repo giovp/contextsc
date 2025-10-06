@@ -47,6 +47,19 @@ optional-dependencies.doc = [
   # "sphinxcontrib-bibtex>=1",
   "sphinxext-opengraph",
 ]
+optional-dependencies.scverse = [
+  "anndata",
+  "decoupler",
+  "mudata",
+  "muon",
+  "pertpy",
+  "rapids-singlecell",
+  "scanpy",
+  "scirpy",
+  "scvi-tools",
+  "spatialdata",
+  "squidpy",
+]
 optional-dependencies.semsearch = [
   "sentence-transformers>=2",
 ]

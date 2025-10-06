@@ -112,7 +112,7 @@ ANALYSIS_PACKAGES = [
     ScverseAnalysisPackage(
         name="squidpy",
         display_name="Squidpy",
-        description="Spatial molecular data analysis and visualization",
+        description="Spatial data analysis and visualization",
         github_url="https://github.com/scverse/squidpy",
         docs_url="https://squidpy.readthedocs.io/",
     ),
@@ -137,13 +137,14 @@ ANALYSIS_PACKAGES = [
         github_url="https://github.com/scverse/scirpy",
         docs_url="https://scirpy.scverse.org/",
     ),
-    ScverseAnalysisPackage(
-        name="snapatac2",
-        display_name="SnapATAC2",
-        description="Single-cell ATAC-seq analysis pipeline",
-        github_url="https://github.com/scverse/SnapATAC2",
-        docs_url="https://scverse.org/SnapATAC2/",
-    ),
+    # TODO: Failed to install.
+    # ScverseAnalysisPackage(
+    #     name="snapatac2",
+    #     display_name="SnapATAC2",
+    #     description="Single-cell ATAC-seq analysis pipeline",
+    #     github_url="https://github.com/scverse/SnapATAC2",
+    #     docs_url="https://scverse.org/SnapATAC2/",
+    # ),
     ScverseAnalysisPackage(
         name="rapids_singlecell",
         display_name="rapids-singlecell",
