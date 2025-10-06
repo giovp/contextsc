@@ -325,3 +325,64 @@ def search_functions_by_topic(
     # Sort by score (descending) and return top results
     results.sort(key=lambda x: x[2], reverse=True)
     return results[:max_results]
+
+
+def search_ecosystem_by_topic(
+    topic: str, max_results_per_package: int = 3
+) -> dict[str, list[tuple[str, FunctionInfo, int]]]:
+    """Search for functions across all installed scverse packages.
+
+    This function searches through common modules (`.tl`, `.pp`) in all
+    installed scverse packages to find functions matching the given topic.
+
+    Parameters
+    ----------
+    topic : str
+        Topic keyword to search for (e.g., 'differential', 'clustering').
+    max_results_per_package : int, default: 3
+        Maximum number of results to return per package.
+
+    Returns
+    -------
+    dict[str, list[tuple[str, FunctionInfo, int]]]
+        Dictionary mapping package names to lists of (function_name, function_info, score)
+        tuples. Only includes packages with at least one matching function.
+
+    Examples
+    --------
+    >>> results = search_ecosystem_by_topic("differential")
+    >>> for package, matches in results.items():
+    ...     print(f"{package}: {[name for name, _, _ in matches]}")
+    scanpy: ['rank_genes_groups', 'filter_rank_genes_groups']
+    pertpy: ['differential_gene_expression']
+    """
+    # Import here to avoid circular dependency
+    from .environment import get_installed_package_names
+
+    installed_packages = get_installed_package_names()
+    results = {}
+
+    # Common module patterns in scverse packages
+    module_patterns = ["tl", "pp"]
+
+    for package_name in installed_packages:
+        package_results = []
+
+        for pattern in module_patterns:
+            module_path = f"{package_name}.{pattern}"
+
+            try:
+                # Try to search this module
+                matches = search_functions_by_topic(module_path, topic, max_results=max_results_per_package)
+                package_results.extend(matches)
+            except IntrospectionError:
+                # Module doesn't exist or can't be imported - skip silently
+                continue
+
+        # Only include packages with results
+        if package_results:
+            # Sort by score and limit to max_results_per_package
+            package_results.sort(key=lambda x: x[2], reverse=True)
+            results[package_name] = package_results[:max_results_per_package]
+
+    return results

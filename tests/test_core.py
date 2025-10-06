@@ -22,6 +22,7 @@ from contextsc.core import (
     is_package_installed,
     list_module_functions,
     parse_numpy_docstring,
+    search_ecosystem_by_topic,
     search_functions_by_topic,
 )
 
@@ -132,9 +133,9 @@ def search_functions_by_topic_any(module_path: str, topic: str, max_results: int
 
 def test_package_registry():
     """Test package registry has expected packages."""
-    assert len(CORE_SCVERSE_PACKAGES) == 12
+    assert len(CORE_SCVERSE_PACKAGES) == 11  # snapatac2 disabled due to install issues
     assert len(DATA_FORMAT_PACKAGES) == 3
-    assert len(ANALYSIS_PACKAGES) == 9
+    assert len(ANALYSIS_PACKAGES) == 8  # snapatac2 disabled
 
     package_names = [pkg.name for pkg in CORE_SCVERSE_PACKAGES]
     assert "anndata" in package_names
@@ -142,7 +143,7 @@ def test_package_registry():
     assert "mudata" in package_names
     assert "scvi-tools" in package_names
     assert "scirpy" in package_names
-    assert "snapatac2" in package_names
+    # snapatac2 is commented out in package_registry.py due to installation issues
     assert "rapids_singlecell" in package_names
     assert "pertpy" in package_names
     assert "decoupler" in package_names
@@ -198,7 +199,7 @@ def test_is_package_installed():
 def test_get_installed_scverse_packages():
     """Test getting list of installed scverse packages."""
     packages = get_installed_scverse_packages()
-    assert len(packages) == 12
+    assert len(packages) == 11  # snapatac2 disabled due to install issues
     assert all(hasattr(pkg, "metadata") for pkg in packages)
     assert all(hasattr(pkg, "version") for pkg in packages)
     assert all(hasattr(pkg, "is_available") for pkg in packages)
@@ -615,3 +616,64 @@ def test_semantic_search_automatic():
     if results:
         func_name, func_info, score = results[0]
         assert isinstance(score, int)
+
+
+# Ecosystem search tests
+def test_search_ecosystem_by_topic():
+    """Test searching across the scverse ecosystem."""
+    # This test only runs if at least one scverse package is installed
+    installed = get_installed_package_names()
+
+    if not installed:
+        pytest.skip("No scverse packages installed")
+
+    # Search for a common topic across all packages
+    results = search_ecosystem_by_topic("normalize", max_results_per_package=2)
+
+    # Results should be a dict mapping package names to function lists
+    assert isinstance(results, dict)
+
+    # All keys should be installed package names
+    for package_name in results.keys():
+        assert package_name in installed
+
+    # Each value should be a list of tuples (func_name, func_info, score)
+    for _package_name, matches in results.items():
+        assert isinstance(matches, list)
+        assert len(matches) <= 2  # Respects max_results_per_package
+
+        for func_name, func_info, score in matches:
+            assert isinstance(func_name, str)
+            assert func_info.name.endswith(func_name)
+            assert isinstance(score, int)
+            assert score > 0
+
+
+def test_search_ecosystem_empty_results():
+    """Test ecosystem search with no matching functions."""
+    installed = get_installed_package_names()
+
+    if not installed:
+        pytest.skip("No scverse packages installed")
+
+    # Search for a very unlikely topic
+    results = search_ecosystem_by_topic("nonexistent_topic_xyz_12345", max_results_per_package=3)
+
+    # Should return empty dict
+    assert isinstance(results, dict)
+    assert len(results) == 0
+
+
+def test_search_ecosystem_max_results():
+    """Test that max_results_per_package is respected."""
+    installed = get_installed_package_names()
+
+    if not installed:
+        pytest.skip("No scverse packages installed")
+
+    # Search with max_results_per_package=1
+    results = search_ecosystem_by_topic("data", max_results_per_package=1)
+
+    # Each package should have at most 1 result
+    for _package_name, matches in results.items():
+        assert len(matches) <= 1

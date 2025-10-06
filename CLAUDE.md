@@ -37,7 +37,7 @@ This MCP server is built with FastMCP and exposes tools that MCP clients can cal
   - `_get_docs.py`: Fetches documentation for specific functions/classes
   - Tools are registered by decorating functions with `@mcp.tool`
 - **`src/contextsc/core/`**: Core introspection functionality
-  - `package_registry.py`: Registry of 12 core scverse packages (3 data formats, 9 analysis tools)
+  - `package_registry.py`: Registry of 11 core scverse packages (3 data formats, 8 analysis tools; snapatac2 disabled due to install issues)
   - `environment.py`: Detects which packages are installed using `importlib.util.find_spec()`
   - `introspector.py`: Extracts docstrings, signatures, parameters using `inspect` module; includes topic-based search
   - `formatter.py`: Formats documentation with intelligent section-based truncation and topic filtering
@@ -60,6 +60,15 @@ This MCP server is built with FastMCP and exposes tools that MCP clients can cal
   - With function path: Filters docstring sections by topic (e.g., `get-scverse-docs("scanpy.pp.neighbors", topic="connectivity")`)
 - **Intelligent truncation**: Preserves critical sections (signature, parameters) even with low token limits
 
+**`search-scverse-ecosystem`**: Search for functions across all installed scverse packages
+- Parameters:
+  - `topic` - keyword to search for (e.g., 'differential', 'clustering', 'normalize')
+  - `max_results_per_package` (default: 3) - maximum results to show per package
+- Returns: Functions grouped by package with relevance scores and brief descriptions
+- **Use case**: Cross-ecosystem discovery before drilling down into specific packages
+- **Example workflow**: Search "differential" → see scanpy has `rank_genes_groups`, pertpy has `differential_gene_expression` → choose which to explore with `get-scverse-docs`
+- **Automatic semantic search**: Uses sentence transformers if `contextsc[semsearch]` is installed, otherwise keyword matching
+
 ### How It Works
 
 1. **Package Detection**: On startup or when called, checks which core scverse packages are installed
@@ -78,6 +87,11 @@ This MCP server is built with FastMCP and exposes tools that MCP clients can cal
 
 Example usage flows:
 ```python
+# Cross-ecosystem discovery: Find which package has what you need
+# Tool call: search_scverse_ecosystem("differential")
+# Returns: Functions grouped by package (scanpy, pertpy, etc.) with scores
+# Use case: "I want differential analysis" → discover scanpy.tl.rank_genes_groups vs pertpy.tl.differential_gene_expression
+
 # Basic usage: Get full documentation
 # Tool call: get_scverse_docs("scanpy.pp.normalize_total")
 # Returns: Full docstring with signature and parameters

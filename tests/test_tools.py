@@ -65,3 +65,60 @@ async def test_get_scverse_docs_with_token_limit():
         assert result.data is not None
         # Should either be truncated or within limit
         assert len(result.data) < 10000
+
+
+@pytest.mark.asyncio
+async def test_search_scverse_ecosystem():
+    """Test searching across the scverse ecosystem."""
+    from contextsc.core import get_installed_package_names
+
+    installed = get_installed_package_names()
+    if not installed:
+        pytest.skip("No scverse packages installed")
+
+    async with Client(contextsc.mcp) as client:
+        result = await client.call_tool("search_scverse_ecosystem", {"topic": "normalize"})
+        assert result.data is not None
+
+        # Should have a header about searching
+        assert "matching" in result.data.lower() or "functions" in result.data.lower()
+
+
+@pytest.mark.asyncio
+async def test_search_scverse_ecosystem_empty_topic():
+    """Test ecosystem search with empty topic."""
+    async with Client(contextsc.mcp) as client:
+        result = await client.call_tool("search_scverse_ecosystem", {"topic": ""})
+        assert result.data is not None
+        assert "Please provide a search topic" in result.data
+
+
+@pytest.mark.asyncio
+async def test_search_scverse_ecosystem_no_results():
+    """Test ecosystem search with no matching functions."""
+    from contextsc.core import get_installed_package_names
+
+    installed = get_installed_package_names()
+    if not installed:
+        pytest.skip("No scverse packages installed")
+
+    async with Client(contextsc.mcp) as client:
+        result = await client.call_tool("search_scverse_ecosystem", {"topic": "nonexistent_topic_xyz_12345_unlikely"})
+        assert result.data is not None
+        assert "No functions found" in result.data
+
+
+@pytest.mark.asyncio
+async def test_search_scverse_ecosystem_max_results():
+    """Test ecosystem search with custom max_results_per_package."""
+    from contextsc.core import get_installed_package_names
+
+    installed = get_installed_package_names()
+    if not installed:
+        pytest.skip("No scverse packages installed")
+
+    async with Client(contextsc.mcp) as client:
+        result = await client.call_tool("search_scverse_ecosystem", {"topic": "data", "max_results_per_package": 1})
+        assert result.data is not None
+        # Should return results or no results message
+        assert isinstance(result.data, str)

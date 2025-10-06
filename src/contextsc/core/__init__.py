@@ -22,6 +22,7 @@ from .introspector import (
     extract_function_info,
     get_object_by_path,
     list_module_functions,
+    search_ecosystem_by_topic,
     search_functions_by_topic,
 )
 from .package_registry import (
@@ -56,6 +57,7 @@ __all__ = [
     "extract_function_info",
     "get_object_by_path",
     "list_module_functions",
+    "search_ecosystem_by_topic",
     "search_functions_by_topic",
     # package_registry
     "ANALYSIS_PACKAGES",
