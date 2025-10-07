@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from .introspector import FunctionInfo
+from .introspector import FunctionInfo, SourceInfo
 
 
 class SectionPriority(Enum):
@@ -335,3 +335,88 @@ def format_function_list(module_path: str, functions: list[str]) -> str:
         lines.append(f"- `{module_path}.{func}`")
 
     return "\n".join(lines)
+
+
+def format_function_source(
+    source_info: SourceInfo, func_info: FunctionInfo | None = None, max_tokens: int = DEFAULT_TOKENS
+) -> str:
+    """Format function source code for LLM consumption with intelligent truncation.
+
+    Parameters
+    ----------
+    source_info : SourceInfo
+        Source code information to format.
+    func_info : FunctionInfo | None, default: None
+        Optional function documentation to include alongside source.
+    max_tokens : int, default: 10000
+        Maximum tokens to return. Minimum 1000 tokens enforced.
+
+    Returns
+    -------
+    str
+        Formatted source code string with optional documentation.
+    """
+    # Enforce minimum token limit
+    max_tokens = max(max_tokens, MINIMUM_TOKENS)
+
+    sections = []
+
+    # Header with file location
+    header_lines = [
+        f"# {source_info.name}",
+        "",
+        f"**Source:** `{source_info.file_path}:{source_info.line_start}-{source_info.line_end}`",
+    ]
+    sections.append("\n".join(header_lines))
+
+    # If documentation is requested, include it first (brief version)
+    if func_info:
+        doc_lines = [
+            "## Documentation",
+            "",
+            f"**Signature:** `{func_info.name}{func_info.signature}`",
+            "",
+        ]
+        # Include first paragraph of docstring
+        first_para = func_info.docstring.split("\n\n")[0] if func_info.docstring else "No documentation available."
+        doc_lines.append(first_para)
+        sections.append("\n".join(doc_lines))
+
+    # Source code (main content)
+    source_lines = ["## Source Code", "", "```python", source_info.source_code.rstrip(), "```"]
+    source_section = "\n".join(source_lines)
+
+    # Check if we need to truncate
+    current_content = "\n\n".join(sections)
+    current_tokens = estimate_token_count(current_content)
+    source_tokens = estimate_token_count(source_section)
+
+    if current_tokens + source_tokens <= max_tokens:
+        # Everything fits
+        sections.append(source_section)
+    else:
+        # Need to truncate source code
+        remaining_tokens = max_tokens - current_tokens - 50  # Reserve space for truncation message
+        if remaining_tokens < 100:
+            # Not enough space for meaningful source
+            sections.append("## Source Code\n\n[... source code truncated due to token limit ...]")
+        else:
+            # Truncate source intelligently
+            char_limit = remaining_tokens * 4
+            lines = source_info.source_code.split("\n")
+
+            # Always include function signature (first few lines)
+            truncated_lines = []
+            char_count = 0
+            for i, line in enumerate(lines):
+                if char_count + len(line) + 1 > char_limit:
+                    # Stop here
+                    truncated_lines.append(f"    # ... {len(lines) - i} more lines truncated ...")
+                    break
+                truncated_lines.append(line)
+                char_count += len(line) + 1
+
+            truncated_source = "\n".join(truncated_lines)
+            sections.append(f"## Source Code\n\n```python\n{truncated_source}\n```")
+
+    return "\n\n".join(sections)

@@ -39,6 +39,31 @@ class FunctionInfo:
     return_annotation: str
 
 
+@dataclass
+class SourceInfo:
+    """Source code information for a function or method.
+
+    Attributes
+    ----------
+    name : str
+        Full qualified name (e.g., 'scanpy.pp.normalize_total').
+    source_code : str
+        Source code of the function.
+    file_path : str
+        Path to the source file.
+    line_start : int
+        Starting line number in the source file.
+    line_end : int
+        Ending line number in the source file.
+    """
+
+    name: str
+    source_code: str
+    file_path: str
+    line_start: int
+    line_end: int
+
+
 class IntrospectionError(Exception):
     """Raised when introspection fails."""
 
@@ -386,3 +411,68 @@ def search_ecosystem_by_topic(
             results[package_name] = package_results[:max_results_per_package]
 
     return results
+
+
+def extract_function_source(module_path: str, _allow_any_package: bool = False) -> SourceInfo:
+    """Extract source code for a function or method.
+
+    Parameters
+    ----------
+    module_path : str
+        Full dotted path to the function (e.g., 'scanpy.pp.normalize_total').
+    _allow_any_package : bool, default: False
+        Internal parameter for testing. Allows introspection of non-scverse packages.
+
+    Returns
+    -------
+    SourceInfo
+        Extracted source information.
+
+    Raises
+    ------
+    IntrospectionError
+        If the source cannot be retrieved (e.g., C extensions, built-ins).
+    """
+    try:
+        obj = get_object_by_path(module_path, _allow_any_package=_allow_any_package)
+    except IntrospectionError as e:
+        raise IntrospectionError(f"Failed to import {module_path}: {e}") from e
+
+    # Verify it's callable
+    if not callable(obj):
+        raise IntrospectionError(f"{module_path} is not a callable object")
+
+    # Try to get source code
+    try:
+        source_code = inspect.getsource(obj)
+    except (OSError, TypeError) as e:
+        raise IntrospectionError(
+            f"Cannot retrieve source code for {module_path}. "
+            f"This may be a built-in function, C extension, or dynamically generated code. "
+            f"Error: {e}"
+        ) from e
+
+    # Get source file
+    try:
+        file_path = inspect.getsourcefile(obj)
+        if file_path is None:
+            file_path = "unknown"
+    except (TypeError, AttributeError):
+        file_path = "unknown"
+
+    # Get source lines and line numbers
+    try:
+        source_lines, line_start = inspect.getsourcelines(obj)
+        line_end = line_start + len(source_lines) - 1
+    except (OSError, TypeError):
+        # Fall back to estimating from source code
+        line_start = 1
+        line_end = source_code.count("\n") + 1
+
+    return SourceInfo(
+        name=module_path,
+        source_code=source_code,
+        file_path=file_path,
+        line_start=line_start,
+        line_end=line_end,
+    )
