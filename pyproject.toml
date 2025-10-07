@@ -26,6 +26,7 @@ dependencies = [
   # "session-info2",
   "click",
   "fastmcp",
+  "httpx>=0.28.1", # Required by fastmcp, pin to avoid downgrades from scverse packages
 ]
 optional-dependencies.dev = [
   "pre-commit",
