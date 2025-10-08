@@ -101,6 +101,9 @@ python = [ "3.13" ]
 
 [tool.hatch.envs.hatch-test]
 features = [ "test", "scverse" ]
+extra-dependencies = [
+  "httpx>=0.28.1", # Force httpx version to prevent downgrades from scverse pre-release packages
+]
 
 [tool.hatch.envs.hatch-test.overrides]
 # If the matrix variable `deps` is set to "pre",
