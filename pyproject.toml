@@ -100,7 +100,7 @@ python = [ "3.13" ]
 
 [tool.hatch.envs.hatch-test]
 features = [ "test", "scverse" ]
-extra-dependencies = [
+dependencies = [
   "httpx>=0.28.1", # Pin version in all test environments to prevent scverse downgrades
 ]
 
