@@ -13,8 +13,10 @@ from contextsc.core import (
     ScverseAnalysisPackage,
     ScverseDataFormatPackage,
     extract_function_info,
+    extract_function_source,
     filter_docstring_by_topic,
     format_function_docs,
+    format_function_source,
     format_package_list,
     get_installed_package_names,
     get_installed_scverse_packages,
@@ -31,6 +33,11 @@ from contextsc.core import (
 def extract_function_info_any(path: str):
     """Extract function info allowing any package (for testing)."""
     return extract_function_info(path, _allow_any_package=True)
+
+
+def extract_function_source_any(path: str):
+    """Extract function source allowing any package (for testing)."""
+    return extract_function_source(path, _allow_any_package=True)
 
 
 def list_module_functions_any(path: str):
@@ -677,3 +684,90 @@ def test_search_ecosystem_max_results():
     # Each package should have at most 1 result
     for _package_name, matches in results.items():
         assert len(matches) <= 1
+
+
+# Source extraction tests
+def test_extract_function_source():
+    """Test extracting source code from a function."""
+    # Use a function from our own codebase
+    source_info = extract_function_source_any("contextsc.core.introspector.extract_function_info")
+
+    assert source_info.name == "contextsc.core.introspector.extract_function_info"
+    assert source_info.source_code != ""
+    assert "def extract_function_info" in source_info.source_code
+    assert source_info.file_path != "unknown"
+    assert source_info.line_start > 0
+    assert source_info.line_end >= source_info.line_start
+
+
+def test_extract_function_source_class_method():
+    """Test extracting source for a class method."""
+    # Use pathlib which is pure Python
+    source_info = extract_function_source_any("pathlib.Path.is_dir")
+
+    assert source_info.name == "pathlib.Path.is_dir"
+    assert source_info.source_code != ""
+    assert "def is_dir" in source_info.source_code
+
+
+def test_extract_function_source_builtin_error():
+    """Test that built-in functions raise appropriate errors."""
+    # Built-in functions don't have source code
+    with pytest.raises(IntrospectionError) as exc_info:
+        extract_function_source_any("builtins.len")
+
+    assert "Cannot retrieve source code" in str(exc_info.value)
+
+
+def test_extract_function_source_invalid():
+    """Test extracting source from invalid path."""
+    with pytest.raises(IntrospectionError):
+        extract_function_source_any("nonexistent.module.function")
+
+
+def test_format_function_source():
+    """Test formatting function source code."""
+    source_info = extract_function_source_any("contextsc.core.formatter.estimate_token_count")
+    formatted = format_function_source(source_info)
+
+    assert "# contextsc.core.formatter.estimate_token_count" in formatted
+    assert "**Source:**" in formatted
+    assert "## Source Code" in formatted
+    assert "```python" in formatted
+    assert "def estimate_token_count" in formatted
+
+
+def test_format_function_source_with_docs():
+    """Test formatting source code with documentation."""
+    source_info = extract_function_source_any("contextsc.core.formatter.estimate_token_count")
+    func_info = extract_function_info_any("contextsc.core.formatter.estimate_token_count")
+    formatted = format_function_source(source_info, func_info=func_info)
+
+    assert "# contextsc.core.formatter.estimate_token_count" in formatted
+    assert "## Documentation" in formatted
+    assert "**Signature:**" in formatted
+    assert "## Source Code" in formatted
+    assert "```python" in formatted
+
+
+def test_format_function_source_with_token_limit():
+    """Test formatting source with token limit."""
+    source_info = extract_function_source_any("contextsc.core.introspector.extract_function_info")
+    # Use a larger function and smaller limit to test truncation
+    formatted = format_function_source(source_info, max_tokens=2000)
+
+    # Should be truncated or fit within limit (with some margin for headers)
+    estimated_tokens = len(formatted) // 4
+    assert estimated_tokens <= 2100  # Allow some margin for headers and formatting
+
+
+def test_format_function_source_respects_minimum():
+    """Test that formatter respects minimum token limit."""
+    source_info = extract_function_source_any("contextsc.core.formatter.estimate_token_count")
+    formatted = format_function_source(source_info, max_tokens=100)
+
+    # Should enforce minimum of 1000 tokens, but if function is short it won't be padded
+    # Just verify it returns something reasonable
+    assert len(formatted) > 100  # At least returns headers and some code
+    assert "## Source Code" in formatted
+    assert "```python" in formatted
