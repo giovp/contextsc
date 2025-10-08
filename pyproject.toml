@@ -108,6 +108,10 @@ features = [ "test", "scverse" ]
 matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
 ]
+# Don't install scverse packages in pre-release tests to avoid httpx conflicts
+matrix.deps.features = [
+  { value = [ "test" ], if = [ "pre" ] },
+]
 
 [tool.ruff]
 line-length = 120
