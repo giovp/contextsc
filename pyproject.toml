@@ -26,7 +26,6 @@ dependencies = [
   # "session-info2",
   "click",
   "fastmcp",
-  "httpx>=0.28.1", # Required by fastmcp, pin to avoid downgrades from scverse packages
 ]
 optional-dependencies.dev = [
   "pre-commit",
@@ -101,16 +100,15 @@ python = [ "3.13" ]
 
 [tool.hatch.envs.hatch-test]
 features = [ "test", "scverse" ]
+extra-dependencies = [
+  "httpx>=0.28.1", # Pin version in all test environments to prevent scverse downgrades
+]
 
 [tool.hatch.envs.hatch-test.overrides]
 # If the matrix variable `deps` is set to "pre",
 # set the environment variable `UV_PRERELEASE` to "allow".
 matrix.deps.env-vars = [
   { key = "UV_PRERELEASE", value = "allow", if = [ "pre" ] },
-]
-# Don't install scverse packages in pre-release tests to avoid httpx conflicts
-matrix.deps.features = [
-  { value = [ "test" ], if = [ "pre" ] },
 ]
 
 [tool.ruff]
